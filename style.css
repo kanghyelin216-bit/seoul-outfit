@@ -22,8 +22,8 @@ h2{font-family:"Gowun Batang",serif;font-size:1.15rem;margin:0 0 10px}
 .wx-detail{flex:1}
 .wx-label{margin:0;font-size:1.15rem;font-weight:700}
 .wx-meta{margin:2px 0 0;font-size:.875rem;color:var(--sub)}
-.hint{margin:10px 4px 24px;font-size:.9rem;color:var(--sub)}
-.memo-box,.list-section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:20px}
+.hint{margin:10px 4px 8px;font-size:.9rem;color:var(--sub)}
+.memo-box,.list-section,.hourly{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:20px}
 .memo-form{display:flex;gap:8px}
 .memo-form input{flex:1;min-width:0;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .notice{margin:0;color:var(--sub);font-size:.9rem}
@@ -42,3 +42,13 @@ h2{font-family:"Gowun Batang",serif;font-size:1.15rem;margin:0 0 10px}
   .temp{font-size:3.2rem}
   .memo-form{flex-direction:column}
 }
+
+.similar{margin:0 4px 24px;padding:10px 14px;background:var(--paper);border-left:4px solid var(--sun);border-radius:0 8px 8px 0;font-size:.9rem}
+.hourly{margin-top:16px}
+.hourly svg{display:block;width:100%;height:auto}
+.hourly text{fill:var(--sub);font-size:11px;font-family:inherit}
+.hourly .now{fill:var(--sun)}
+.btn.small{font-size:.8rem;padding:4px 10px}
+.memo-body{flex:1;min-width:0}
+.memo-actions{display:flex;gap:6px;flex:none}
+.edit-input{width:100%;font:inherit;padding:6px 10px;border:1px solid var(--sky);border-radius:8px;background:#fff}
