@@ -7,7 +7,7 @@
 - **기술:** HTML / CSS / JavaScript(ES Modules), Firebase Authentication, Cloud Firestore, GitHub Pages
 
 ## 실행 스크린샷
-<img width="940" height="870" alt="image" src="https://github.com/user-attachments/assets/08446d19-492d-4bcc-ba76-c6cd730ebb10" />
+<img width="621" height="856" alt="image" src="https://github.com/user-attachments/assets/4c91c4ed-5431-46b3-98ac-26c3940a0ef1" />
 
 
 ## 주요 기능
