@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>서울 날씨 & 옷차림 메모</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>서울 날씨 & 옷차림 메모</h1>
+      <div id="authArea" class="auth">
+        <span id="userName" class="user" hidden></span>
+        <button id="loginBtn" class="btn primary" type="button">Google로 로그인</button>
+        <button id="logoutBtn" class="btn" type="button" hidden>로그아웃</button>
+      </div>
+    </header>
+
+    <section class="weather" aria-live="polite">
+      <div id="wxTemp" class="temp">--°</div>
+      <div class="wx-detail">
+        <p id="wxLabel" class="wx-label">날씨를 불러오는 중…</p>
+        <p id="wxMeta" class="wx-meta"></p>
+      </div>
+      <button id="refreshBtn" class="btn" type="button">새로고침</button>
+    </section>
+    <p id="wxHint" class="hint"></p>
+
+    <section class="memo-box">
+      <h2>오늘의 옷차림 한 줄</h2>
+      <p id="loginNotice" class="notice">로그인하면 오늘 입은 옷을 한 줄로 남길 수 있어요.</p>
+      <form id="memoForm" class="memo-form" hidden>
+        <input id="memoInput" type="text" maxlength="100" placeholder="예: 얇은 니트에 트렌치코트, 저녁엔 살짝 쌀쌀" required />
+        <button class="btn primary" type="submit">메모 저장</button>
+      </form>
+      <p id="status" class="status" role="status"></p>
+    </section>
+
+    <section id="listSection" class="list-section" hidden>
+      <h2>내 옷차림 기록</h2>
+      <ul id="memoList" class="memo-list"></ul>
+      <p id="emptyMsg" class="notice" hidden>아직 기록이 없어요. 오늘의 옷차림을 첫 메모로 남겨보세요.</p>
+    </section>
+
+    <footer class="foot">날씨 데이터: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
