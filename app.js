@@ -3,7 +3,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, serverTimestamp
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -12,7 +12,8 @@ const el = {
   loginBtn: $("loginBtn"), logoutBtn: $("logoutBtn"), userName: $("userName"),
   temp: $("wxTemp"), label: $("wxLabel"), meta: $("wxMeta"), hint: $("wxHint"), refresh: $("refreshBtn"),
   notice: $("loginNotice"), form: $("memoForm"), input: $("memoInput"), status: $("status"),
-  listSection: $("listSection"), list: $("memoList"), empty: $("emptyMsg")
+  listSection: $("listSection"), list: $("memoList"), empty: $("emptyMsg"),
+  hourly: $("hourlyChart"), similar: $("similarBox")
 };
 
 // index.html과 id가 맞지 않으면 어떤 요소가 없는지 화면에 알려줌
@@ -27,7 +28,7 @@ if (missing.length) {
 const WEATHER_URL =
   "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780" +
   "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m" +
-  "&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1";
+  "&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1";
 
 const CODE_LABEL = {
   0: "맑음", 1: "대체로 맑음", 2: "구름 조금", 3: "흐림",
@@ -43,6 +44,7 @@ const CODE_LABEL = {
 };
 
 let currentWeather = null; // 메모 저장 시 함께 기록
+let allMemos = [];         // 불러온 내 메모 (비슷한 날씨 추천용)
 
 function outfitHint(feels) {
   if (feels >= 28) return "참고: 민소매·반팔, 얇고 통풍 잘 되는 옷이 어울려요.";
@@ -51,6 +53,49 @@ function outfitHint(feels) {
   if (feels >= 12) return "참고: 자켓이나 트렌치코트를 챙기세요.";
   if (feels >= 6) return "참고: 코트와 니트가 필요해요.";
   return "참고: 패딩, 목도리 등 방한용품을 챙기세요.";
+}
+
+function renderHourly(h) {
+  const temps = h.temperature_2m;
+  const W = 600, H = 160, padX = 24, padT = 24, padB = 34;
+  const max = Math.max(...temps), min = Math.min(...temps);
+  const span = Math.max(max - min, 1);
+  const x = (i) => padX + (i * (W - 2 * padX)) / (temps.length - 1);
+  const y = (t) => padT + ((max - t) * (H - padT - padB)) / span;
+  const pts = temps.map((t, i) => `${x(i).toFixed(1)},${y(t).toFixed(1)}`).join(" ");
+  const nowHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+  const iMax = temps.indexOf(max), iMin = temps.indexOf(min);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="오늘 시간별 기온 그래프">`;
+  svg += `<polyline points="${pts}" fill="none" stroke="var(--sky)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  for (let i = 0; i < temps.length; i += 3) {
+    svg += `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${i}시</text>`;
+  }
+  for (const i of new Set([iMax, iMin])) {
+    const ty = y(temps[i]) + (i === iMax ? -8 : 14);
+    svg += `<text x="${x(i).toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle">${Math.round(temps[i])}°</text>`;
+  }
+  if (nowHour < temps.length) {
+    svg += `<circle class="now" cx="${x(nowHour).toFixed(1)}" cy="${y(temps[nowHour]).toFixed(1)}" r="5"/>`;
+  }
+  svg += "</svg>";
+  el.hourly.innerHTML = svg; // 숫자만 들어가는 문자열이라 안전
+}
+
+function updateSimilar() {
+  el.similar.hidden = true;
+  if (!currentWeather || !allMemos.length) return;
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+  let best = null, bestDiff = Infinity;
+  for (const m of allMemos) { // 최신순 정렬이라 같은 차이면 더 최근 기록이 선택됨
+    if (m.feels == null || m.date === today) continue;
+    const diff = Math.abs(m.feels - currentWeather.feels);
+    if (diff <= 2 && diff < bestDiff) { best = m; bestDiff = diff; }
+  }
+  if (!best) return;
+  el.similar.textContent =
+    `체감온도가 비슷했던 ${best.date}(체감 ${best.feels}°, ${best.weatherLabel ?? "-"})에는 "${best.text}"라고 적었어요.`;
+  el.similar.hidden = false;
 }
 
 async function loadWeather() {
@@ -74,6 +119,8 @@ async function loadWeather() {
     el.meta.textContent =
       `체감 ${currentWeather.feels}° · 최저 ${min}° / 최고 ${max}° · 습도 ${c.relative_humidity_2m}% · 바람 ${c.wind_speed_10m}km/h`;
     el.hint.textContent = outfitHint(c.apparent_temperature);
+    renderHourly(data.hourly);
+    updateSimilar();
   } catch (e) {
     console.error(e);
     currentWeather = null;
@@ -81,6 +128,8 @@ async function loadWeather() {
     el.label.textContent = "날씨를 불러오지 못했어요";
     el.meta.textContent = "네트워크를 확인하고 새로고침 버튼을 눌러주세요.";
     el.hint.textContent = "";
+    el.hourly.replaceChildren();
+    el.similar.hidden = true;
   } finally {
     el.refresh.disabled = false;
   }
@@ -131,39 +180,103 @@ async function loadMemos() {
 }
 
 function renderMemos(docs) {
+  allMemos = docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderList();
+  updateSimilar();
+}
+
+function renderList() {
   el.list.replaceChildren();
-  el.empty.hidden = docs.length > 0;
-  for (const d of docs) {
-    const m = d.data();
-    const li = document.createElement("li");
+  el.empty.hidden = allMemos.length > 0;
+  for (const m of allMemos) el.list.append(memoItem(m));
+}
 
-    const box = document.createElement("div");
-    const text = document.createElement("p");
-    text.className = "memo-text";
-    text.textContent = m.text;
-    const info = document.createElement("p");
-    info.className = "memo-info";
-    info.textContent = `${m.date} · ${m.weatherLabel ?? "-"} ${m.temp ?? "-"}° (체감 ${m.feels ?? "-"}°)`;
-    box.append(text, info);
+function memoItem(m) {
+  const li = document.createElement("li");
 
-    const del = document.createElement("button");
-    del.className = "btn del";
-    del.type = "button";
-    del.textContent = "삭제";
-    del.addEventListener("click", async () => {
-      if (!confirm("이 메모를 삭제할까요?")) return;
-      try {
-        await deleteDoc(doc(db, "users", currentUser.uid, "memos", d.id));
-        await loadMemos();
-      } catch (e) {
-        console.error(e);
-        setStatus("삭제에 실패했어요.", true);
-      }
-    });
+  const box = document.createElement("div");
+  box.className = "memo-body";
+  const text = document.createElement("p");
+  text.className = "memo-text";
+  text.textContent = m.text;
+  const info = document.createElement("p");
+  info.className = "memo-info";
+  info.textContent = `${m.date} · ${m.weatherLabel ?? "-"} ${m.temp ?? "-"}° (체감 ${m.feels ?? "-"}°)`;
+  box.append(text, info);
 
-    li.append(box, del);
-    el.list.append(li);
-  }
+  const actions = document.createElement("div");
+  actions.className = "memo-actions";
+  const edit = document.createElement("button");
+  edit.className = "btn small";
+  edit.type = "button";
+  edit.textContent = "수정";
+  const del = document.createElement("button");
+  del.className = "btn small del";
+  del.type = "button";
+  del.textContent = "삭제";
+  actions.append(edit, del);
+
+  edit.addEventListener("click", () => startEdit(box, actions, m));
+  del.addEventListener("click", async () => {
+    if (!confirm("이 메모를 삭제할까요?")) return;
+    try {
+      await deleteDoc(doc(db, "users", currentUser.uid, "memos", m.id));
+      await loadMemos();
+    } catch (e) {
+      console.error(e);
+      setStatus("삭제에 실패했어요.", true);
+    }
+  });
+
+  li.append(box, actions);
+  return li;
+}
+
+function startEdit(box, actions, m) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = 100;
+  input.value = m.text;
+  input.className = "edit-input";
+
+  const save = document.createElement("button");
+  save.className = "btn small primary";
+  save.type = "button";
+  save.textContent = "저장";
+  const cancel = document.createElement("button");
+  cancel.className = "btn small";
+  cancel.type = "button";
+  cancel.textContent = "취소";
+  const editActions = document.createElement("div");
+  editActions.className = "memo-actions";
+  editActions.append(save, cancel);
+
+  box.replaceChildren(input);
+  actions.replaceWith(editActions);
+  input.focus();
+
+  cancel.addEventListener("click", renderList);
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") save.click();
+    if (ev.key === "Escape") cancel.click();
+  });
+  save.addEventListener("click", async () => {
+    const next = input.value.trim();
+    if (!next) { setStatus("내용을 입력해주세요.", true); return; }
+    save.disabled = true;
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid, "memos", m.id), {
+        text: next,
+        updatedAt: serverTimestamp()
+      });
+      setStatus("메모를 수정했어요.");
+      await loadMemos();
+    } catch (e) {
+      console.error(e);
+      setStatus("수정에 실패했어요.", true);
+      save.disabled = false;
+    }
+  });
 }
 
 async function saveMemo(e) {
@@ -202,7 +315,7 @@ onAuthStateChanged(auth, (user) => {
   el.form.hidden = !loggedIn;
   el.notice.hidden = loggedIn;
   el.listSection.hidden = !loggedIn;
-  if (loggedIn) { setStatus(""); loadMemos(); } else { el.list.replaceChildren(); }
+  if (loggedIn) { setStatus(""); loadMemos(); } else { el.list.replaceChildren(); allMemos = []; updateSimilar(); }
 });
 
 el.loginBtn.addEventListener("click", login);
