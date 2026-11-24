@@ -15,6 +15,14 @@ const el = {
   listSection: $("listSection"), list: $("memoList"), empty: $("emptyMsg")
 };
 
+// index.html과 id가 맞지 않으면 어떤 요소가 없는지 화면에 알려줌
+const missing = Object.entries(el).filter(([, v]) => !v).map(([k]) => k);
+if (missing.length) {
+  const msg = "index.html에서 찾지 못한 요소: " + missing.join(", ") + " — index.html이 app.js와 같은 버전인지 확인하세요.";
+  document.body.insertAdjacentHTML("afterbegin", '<p style="padding:12px;background:#fde;color:#900">' + msg + "</p>");
+  throw new Error(msg);
+}
+
 /* ---------- 날씨 (Open-Meteo, 키 불필요) ---------- */
 const WEATHER_URL =
   "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780" +
