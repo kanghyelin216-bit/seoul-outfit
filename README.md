@@ -3,7 +3,7 @@
 서울의 현재 날씨를 보여주고, Google 로그인 후 오늘의 옷차림을 한 줄로 기록하는 웹앱입니다.
 
 - **사용 API:** [Open-Meteo API](https://open-meteo.com/) (인증키 불필요)
-- **배포 링크:** https://아이디.github.io/seoul-outfit/ ← 본인 주소로 교체
+- **배포 링크:** [https://kanghyelin216-bit.github.io/seoul-outfit/]/ ← 본인 주소로 교체
 - **기술:** HTML / CSS / JavaScript(ES Modules), Firebase Authentication, Cloud Firestore, GitHub Pages
 
 ## 실행 스크린샷
